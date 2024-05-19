@@ -57,8 +57,8 @@ const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
       const response = await axios.post('https://judge0.p.rapidapi.com/submissions', requestPayload, {
         headers: {
           'Content-Type': 'application/json',
-          'X-RapidAPI-Host': 'import.meta.env.VITE_RAPIDAPI_HOST',
-          'X-RapidAPI-Key': 'import.meta.env.VITE_RAPIDAPI_KEY', // Replace with your actual RapidAPI key
+          'X-RapidAPI-Host': import.meta.env.VITE_RAPIDAPI_HOST,
+          'X-RapidAPI-Key': import.meta.env.VITE_RAPIDAPI_KEY, // Replace with your actual RapidAPI key
         },
       });
 
@@ -71,8 +71,8 @@ const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
         resultResponse = await axios.get(`https://judge0.p.rapidapi.com/submissions/${token}`, {
           headers: {
             'Content-Type': 'application/json',
-            'X-RapidAPI-Host': 'import.meta.env.VITE_RAPIDAPI_HOST',
-            'X-RapidAPI-Key': 'import.meta.env.VITE_RAPIDAPI_KEY',
+            'X-RapidAPI-Host': import.meta.env.VITE_RAPIDAPI_HOST,
+            'X-RapidAPI-Key': import.meta.env.VITE_RAPIDAPI_KEY,
           },
         });
       } while (resultResponse.data.status.id <= 2); // Status IDs <= 2 indicate the process is still running
