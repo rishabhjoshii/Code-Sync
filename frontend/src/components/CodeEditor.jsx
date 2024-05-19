@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react';
 import axios from 'axios';
 
-const CodeEditor = () => {
+const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
   const editorRef = useRef(null);
   const [language, setLanguage] = useState('cpp');
   const [code, setCode] = useState('// write your code here');
@@ -10,8 +10,21 @@ const CodeEditor = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [theme, setTheme] = useState('vs-dark');
-
   const monaco = useMonaco();
+
+  useEffect(() => {
+    if (socketRef.current) {
+      socketRef.current.on('code-change', ({ code }) => {
+        if (code !== null) {
+          setCode(code);
+        }
+      });
+
+      return () => {
+        socketRef.current.off('code-change');
+      };
+    }
+  }, [socketRef.current]);
 
   const languageOptions = [
     { id: 54, name: 'cpp' },        // Judge0 language ID for C++
@@ -77,6 +90,15 @@ const CodeEditor = () => {
 
   }
 
+  const handleEditorChange = (value) => {
+    setCode(value);
+    onCodeChange(value);
+    socketRef.current.emit('code-change', {
+        roomId,
+        code: value,
+    });
+};
+
   return (
     <div>
       <div className='flex justify-between items-center'>
@@ -115,7 +137,7 @@ const CodeEditor = () => {
         theme={theme}
         language={language} 
         value={code}
-        onChange={(value)=> setCode(value)}
+        onChange={handleEditorChange}
         options={{
           fontSize: "15",
         }}
