@@ -66,9 +66,13 @@ footer a {
     transition: all 0.3s ease-in-out;
 }
 
-.joinBtn,
-.leaveBtn {
+.joinBtn {
     background: #4aed88;
+    width: 100px;
+    margin-left: auto;
+}
+.leaveBtn {
+    background: rgb(193, 6, 6);
     width: 100px;
     margin-left: auto;
 }
@@ -76,9 +80,11 @@ footer a {
     background: rgb(135, 135, 135);
 }
 
-.joinBtn:hover,
-.leaveBtn:hover {
+.joinBtn:hover {
     background: #2b824c;
+}
+.leaveBtn:hover {
+    background: rgb(118, 3, 3);
 }
 
 .copyBtn:hover {
