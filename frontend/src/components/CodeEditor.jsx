@@ -81,7 +81,7 @@ const CodeEditor = () => {
     <div>
       <div className='flex justify-between items-center'>
         <div>
-          <select className='border-double border-4 border-blue-500 mt-4 mr-4 p-1 ' onChange={(e)=> setLanguage(e.target.value)} value={language}>
+          <select className='text-white border-double border-4 border-blue-500 mt-4 mr-4 p-1 ' onChange={(e)=> setLanguage(e.target.value)} value={language}>
             <option value="cpp">C++</option>
             <option value="javascript">JavaScript</option>
             <option value="typescript">TypeScript</option>
@@ -89,7 +89,7 @@ const CodeEditor = () => {
             <option value="java">Java</option>
           </select>
 
-          <select className='border-double border-4 border-blue-500 mt-4 mr-4 p-1' onChange={(e) => setTheme(e.target.value)} value={theme}>
+          <select className='text-white border-double border-4 border-blue-500 mt-4 mr-4 p-1' onChange={(e) => setTheme(e.target.value)} value={theme}>
             {themeOptions.map((themeOption) => (
               <option key={themeOption.value} value={themeOption.value}>
                 {themeOption.label}

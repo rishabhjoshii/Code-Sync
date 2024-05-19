@@ -2,8 +2,6 @@
     padding: 0;
     margin: 0;
     box-sizing: border-box;
-    max-width: 100vw;
-    max-height: 100vh;
 }
 
 .homePageWrapper {
@@ -109,9 +107,6 @@ footer a:hover {
     display: grid;
     grid-template-columns: 230px 1fr;
 }
-.editorWrap{
-    /* max-width: 100vw; */
-}
 
 .aside {
     background: #1c1e29;
@@ -161,6 +156,7 @@ footer a:hover {
     line-height: 1.6;
     padding-top: 20px;
     width: 100%;
+    height: 100%;
 }
 .terminal {
     height: 215px;
@@ -173,4 +169,8 @@ footer a:hover {
 .outputBox{
     border: 1px solid #9ca3af;
     border-radius: 1px;
+}
+
+select {
+    background: #1c1e29;
 }
