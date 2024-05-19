@@ -8,5 +8,5 @@ export const initSocket =  async function(){
         transports: ['websocket'],
     };
 
-    return io("http://localhost:3000/", options);
+    return io(import.meta.env.VITE_BACKEND_URL, options);
 }
