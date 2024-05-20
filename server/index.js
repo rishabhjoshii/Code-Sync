@@ -1,11 +1,18 @@
 const express = require('express');
 const http = require('http');
 const {Server} = require('socket.io');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server(server); // web socket server
+const io = new Server(server, {           // web socket server
+    cors: {
+        origin: "*",
+    },
+}); 
+
+app.use(cors());
 
 const userSocketMap = {};
 
@@ -45,6 +52,38 @@ io.on('connection', function(socket){
     socket.on('sync-code', ({socketId, code}) => {
         io.to(socketId).emit('code-change', {code});
     })
+
+    socket.on('mssg', ({user, mssg, roomId}) => {
+        socket.in(roomId).emit('mssg', {user,mssg});
+    })
+
+    socket.on('lang', ({lang, roomId}) => {
+        socket.in(roomId).emit('lang', {lang});
+    })
+    socket.on("input-change", ({ inp, roomId }) => {
+        socket.to(roomId).emit("input-change", { inp });  //socket.in
+    });
+
+    socket.on("output-change", ({ out, roomId }) => {
+        socket.in(roomId).emit("output-change", { out });
+    });
+
+    socket.on("sync-lang", ({ socketId, lang }) => {
+        io.to(socketId).emit("lang", { lang });
+    });
+
+    socket.on("sync-input", ({ socketId, inp }) => {
+        io.to(socketId).emit("input-change", { inp});
+    });
+
+    socket.on("sync-output", ({ socketId, out }) => {
+        io.to(socketId).emit("output-change", { out});
+    });
+
+    socket.on("sync-mssg", ({ allMssg,socketId }) => {
+        io.to(socketId).emit("all-mssg", allMssg);
+    });
+
 
     socket.on('disconnecting', () => {
         const rooms = [...socket.rooms]; // getting all the rooms to which this socket is connected & converting the retrieved data into an array

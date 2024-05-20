@@ -5,14 +5,19 @@ import CodeEditor from '../components/CodeEditor'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { initSocket } from '../socket'
+import ChatBox from '../components/ChatBox'
 
 const EditorPage = () => {
-    const navigate = useNavigate();
-    const {roomId} = useParams();
     const socketRef = useRef(null);
     const codeRef = useRef(null);
+    const mssgRef=useRef(null);
+    const languageRef=useRef(null);
+    const inputRef=useRef(null);
+    const outputRef=useRef(null);
+    const navigate = useNavigate();
     const location = useLocation();
     const [clients, setClients] = useState([]);
+    const {roomId} = useParams();
 
     useEffect(()=>{
         const init = async function(){
@@ -37,10 +42,38 @@ const EditorPage = () => {
                     console.log(`${username} joined`);
                 }
                 setClients(clients);
-                socketRef.current.emit('sync-code', {
-                    code: codeRef.current,
-                    socketId,
-                });
+
+                if(codeRef.current){
+                    socketRef.current.emit('sync-code', {
+                        code: codeRef.current,
+                        socketId,
+                    });
+                }
+                if(mssgRef.current){
+                    socketRef.current.emit("sync-mssg",{
+                        allMssg:mssgRef.current,
+                        socketId
+                    })
+                }
+                if(langRef.current){
+                    socketRef.current.emit('sync-lang',{
+                        lang: languageRef.current,
+                        socketId
+                    })
+                }
+                if(inputRef.current){
+                    socketRef.current.emit('sync-input', {
+                        inp: inputRef.current,
+                        socketId,
+                    })
+                }
+                if (outputRef.current) {
+                    socketRef.current.emit("sync-output", { 
+                        out: outputRef.current, 
+                        socketId 
+                    });
+                }
+                
             })
 
             socketRef.current.on('disconnected', ({ socketId, username }) => {
@@ -56,6 +89,8 @@ const EditorPage = () => {
             socketRef.current.disconnect();
             socketRef.current.off('joined');
             socketRef.current.off('disconnected');
+            socketRef.current.off("connect_error");
+            socketRef.current.off("connect_failed");
         }
 
     },[])
@@ -87,7 +122,7 @@ const EditorPage = () => {
 
   return (
     <div className="mainWrap">
-            <div className="aside">
+            <div className="aside h-screen">
                 <div className="asideInner">
                     <div className="logo">
                         <img
@@ -97,7 +132,7 @@ const EditorPage = () => {
                         />
                     </div>
                     <h3>Connected</h3>
-                    <div className="clientsList">
+                    <div className="clientsList h-3/5 overflow-auto">
                         {clients.map((client) => (
                             <Client
                                 key={client.socketId}
@@ -118,6 +153,15 @@ const EditorPage = () => {
                     socketRef={socketRef}
                     roomId={roomId}
                     onCodeChange={(code) => {codeRef.current = code}}
+                    onLanguageChange={(language) => {languageRef.current = language}}
+                    onInputChange={(inp)=>{inputRef.current=inp}}
+                    onOutputChange={(out)=>{outputRef.current=out}}
+                />
+            </div>
+            <div className='chatArea'>
+                <ChatBox
+                    socketRef={socketRef} 
+                    onMssgChange={(data)=>{mssgRef.current=data}}
                 />
             </div>
         </div>

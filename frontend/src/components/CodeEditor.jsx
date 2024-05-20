@@ -1,16 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react'
 import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react';
 import axios from 'axios';
+import { useParams } from 'react-router-dom';
 
-const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
-  const editorRef = useRef(null);
+const CodeEditor = ({socketRef, roomId, onCodeChange, onLanguageChange, onInputChange,onOutputChange}) => {
   const [language, setLanguage] = useState('cpp');
   const [code, setCode] = useState('// write your code here');
   const [output, setOutput] = useState('');
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [theme, setTheme] = useState('vs-dark');
-  const monaco = useMonaco();
+
 
   useEffect(() => {
     if (socketRef.current) {
@@ -20,8 +20,23 @@ const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
         }
       });
 
+      socketRef.current.on('input-change',({inp})=>{
+          setInput(inp);
+      })
+      socketRef.current.on('output-change',({out})=>{
+        setOutput(out);
+      })
+      socketRef.current.on('lang', ({lang})=>{
+        setLanguage(lang);
+      })
+
       return () => {
-        socketRef.current.off('code-change');
+        if (socketRef.current) {
+          socketRef.current.off("code-change");
+          socketRef.current.off("input-change");
+          socketRef.current.off("output-change");
+          socketRef.current.off("lang");
+        }
       };
     }
   }, [socketRef.current]);
@@ -46,40 +61,56 @@ const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
     setOutput('');
 
     const selectedLanguage = languageOptions.find((lang) => lang.name === language);
-    const requestPayload = {
-      source_code: code,
-      language_id: selectedLanguage.id,
-      stdin: input,
+
+    const options = {
+      method: "POST",
+      url: `https://judge0.p.rapidapi.com/submissions`,
+      params: { base64_encoded: "true", fields: "*" },
+      headers: {
+        "content-type": "application/json",
+        "Content-Type": "application/json",
+        "X-RapidAPI-Host": import.meta.env.VITE_RAPIDAPI_HOST,
+        "X-RapidAPI-Key": import.meta.env.VITE_RAPIDAPI_KEY,
+      },
+      data: {
+        language_id: selectedLanguage.id,
+        source_code: btoa(code),
+        stdin: btoa(input),
+      },
     };
 
     try {
       // Submit the code for compilation
-      const response = await axios.post('https://judge0.p.rapidapi.com/submissions', requestPayload, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-RapidAPI-Host': import.meta.env.VITE_RAPIDAPI_HOST,
-          'X-RapidAPI-Key': import.meta.env.VITE_RAPIDAPI_KEY, // Replace with your actual RapidAPI key
-        },
-      });
+      const response = await axios(options)
 
       const token = response.data.token;
 
       // Poll the Judge0 API until the result is ready
       let resultResponse;
+      const options2 = {
+        method: "GET",
+        url: `https://judge0.p.rapidapi.com/submissions/${token}`,
+        params: { base64_encoded: "true", fields: "*" },
+        headers: {
+          "X-RapidAPI-Host": import.meta.env.VITE_RAPIDAPI_HOST,
+          "X-RapidAPI-Key": import.meta.env.VITE_RAPIDAPI_KEY,
+        },
+      };
+
       do {
         await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before polling again
-        resultResponse = await axios.get(`https://judge0.p.rapidapi.com/submissions/${token}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-RapidAPI-Host': import.meta.env.VITE_RAPIDAPI_HOST,
-            'X-RapidAPI-Key': import.meta.env.VITE_RAPIDAPI_KEY,
-          },
-        });
+        resultResponse = await axios(options2);
       } while (resultResponse.data.status.id <= 2); // Status IDs <= 2 indicate the process is still running
 
       console.log("response after compilation: ",resultResponse);
 
-      setOutput(resultResponse.data.stdout || resultResponse.data.stderr);
+      const resultData = resultResponse.data;
+      onOutputChange(resultData);
+      setOutput(resultData);
+      socketRef.current.emit('output-change', {
+        roomId,
+        out: resultData,
+      });
     } 
     catch (error) {
       console.log('compilation error: ', error);
@@ -97,13 +128,31 @@ const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
         roomId,
         code: value,
     });
-};
+  };
+
+  const handleLanguageChange = (e) => {
+    onLanguageChange(e.target.value);
+    setLanguage(e.target.value);
+    socketRef.current.emit('lang', {
+      roomId,
+      lang: e.target.value,
+    })
+  }
+
+  const handleInputchange = (e) => {
+    setInput(e.target.value);
+    onInputChange(e.target.value);
+    socketRef.current.emit('input-change', {
+      roomId,
+      inp: e.target.value,
+    })
+  }
 
   return (
-    <div>
-      <div className='flex justify-between items-center'>
+    <div className='huihui  '>
+      <div className='topbar flex justify-between items-center '>
         <div>
-          <select className='text-white border-double border-4 border-blue-500 mt-4 mr-4 p-1 ' onChange={(e)=> setLanguage(e.target.value)} value={language}>
+          <select className='hover:cursor-pointer text-white border-double border-4 border-blue-500 mt-4 mr-4 p-1 ' onChange={handleLanguageChange} value={language}>
             <option value="cpp">C++</option>
             <option value="javascript">JavaScript</option>
             <option value="typescript">TypeScript</option>
@@ -111,7 +160,7 @@ const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
             <option value="java">Java</option>
           </select>
 
-          <select className='text-white border-double border-4 border-blue-500 mt-4 mr-4 p-1' onChange={(e) => setTheme(e.target.value)} value={theme}>
+          <select className='hover:cursor-pointer text-white border-double border-4 border-blue-500 mt-4 mr-4 p-1' onChange={(e) => setTheme(e.target.value)} value={theme}>
             {themeOptions.map((themeOption) => (
               <option key={themeOption.value} value={themeOption.value}>
                 {themeOption.label}
@@ -124,7 +173,7 @@ const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
           <button
             onClick={handleCompile}
             disabled={loading}
-            className='mt-4 p-2 bg-blue-500 text-white'
+            className='mt-4 p-2 bg-blue-500 text-white rounded'
           >
             {loading ? 'Compiling...' : 'Compile and Run'}
           </button>
@@ -133,27 +182,27 @@ const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
       </div>
 
       <Editor 
-        className='realtimeEditor' 
+        className='realtimeEditor ' 
         theme={theme}
         language={language} 
         value={code}
         onChange={handleEditorChange}
         options={{
-          fontSize: "15",
+          fontSize: "14",
         }}
       />
 
       <div className='terminal border border-gray-400  flex mt-1 '>
         <textarea
-          className='inputBox w-full m-1 p-2  text-white'
+          className='inputBox  m-1 p-2  text-white'
           placeholder='Enter input here...'
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleInputchange}
         />
 
-        <div className='outputBox w-full m-1 p-2 '>
+        <div className='outputBox  m-1 p-2  '>
           <h3 className='text-white'>Output:</h3>
-          <pre className='text-white'>{output}</pre>
+          <ShowOutput output={output}></ShowOutput>
         </div>
       </div>
 
@@ -164,5 +213,45 @@ const CodeEditor = ({socketRef, roomId, onCodeChange}) => {
   )
 }
 
+function ShowOutput({ output }) {
+  let statusId = output?.status?.id;
+  if (statusId === 6) {
+    return (
+      <pre
+        style={{ width: "100%", height: "100%" }}
+        className=" px-2 py-1 font-normal text-sm text-red-500"
+      >
+        {output?.compile_output ? atob(output?.compile_output) : ""}
+      </pre>
+    );
+  } else if (statusId === 3) {
+    return (
+      <pre className=" px-2 py-1 font-normal text-sm text-green-500">
+        {output?.stdout ? atob(output.stdout) : ""}
+      </pre>
+    );
+  } else if (statusId === 5) {
+    return (
+      <pre
+        style={{ width: "100%", height: "100%" }}
+        className="px-2 py-1 font-normal text-sm text-red-500"
+      >
+        Time Limit Exceeded
+      </pre>
+    );
+  } else {
+    return (
+      <pre
+        style={{ width: "100%", height: "100%" }}
+        className="px-2 py-1 font-normal text-sm text-red-500"
+      >
+        {output?.stderr ? atob(output?.stderr) : ""}
+      </pre>
+    );
+  }
+}
+
 export default CodeEditor;
+
+
 

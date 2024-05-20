@@ -59,7 +59,7 @@ const HomePage = () => {
             <div className="inputGroup">
                     <input
                         type="text"
-                        className="inputBox"
+                        className="inputBox w-full"
                         placeholder="ROOM ID"
                         onChange={(e)=> {setRoomId(e.target.value)}}
                         value={roomId}
@@ -67,7 +67,7 @@ const HomePage = () => {
                     />
                     <input
                         type="text"
-                        className="inputBox"
+                        className="inputBox w-full"
                         placeholder="USERNAME"
                         onChange={(e)=> {setUsername(e.target.value)}}
                         value={username}
